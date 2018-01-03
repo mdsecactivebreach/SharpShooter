@@ -20,6 +20,8 @@ SharpShooter includes a predefined CSharp template for executing shellcode, but 
 
 Finally, SharpShooter provides the ability to bundle the payload inside an HTML file using the [Demiguise HTML smuggling](https://github.com/nccgroup/demiguise) technique.
 
+Currently SharpShooter targets v3.5 of the .NET framework which will be found on most end-user Windows workstations, however support for v4 will be added in due course.
+
 Further information can be found on the MDSec blog post.
 
 Usage:
