@@ -95,7 +95,7 @@ SharpShooter contains 2 pre-defined templates; it is recommended you create a cu
 
 Author and Credits
 ==================
-Author: Dominic Chell [@domchell](https://twitter.com/domchell)
+Author: Dominic Chell, MDSec Activebreach [@domchell](https://twitter.com/domchell) and [@mdseclabs](https://twitter.com/mdseclabs)
 
 Credits:
 - @tiraniddo: James Forshaw for DotNetToJScript
