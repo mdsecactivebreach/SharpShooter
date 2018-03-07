@@ -193,7 +193,7 @@ Author and Credits
 Author: Dominic Chell, MDSec ActiveBreach [@domchell](https://twitter.com/domchell) and [@mdseclabs](https://twitter.com/mdseclabs)
 
 Credits:
-- @tiraniddo: James Forshaw for DotNetToJScript
-- @Arno0x0x: for EmbedInHTML
-- @buffaloverflow: Rich Warren for Demiguise
-- @arvanaghi and @ChrisTruncer: Brandon Arvanaghi and Chris Truncer for CheckPlease
+- [@tiraniddo](https://twitter.com/tiraniddo): James Forshaw for DotNetToJScript
+- [@Arno0x0x](https://twitter.com/Arno0x0x): for EmbedInHTML
+- [@buffaloverflow](https://twitter.com/buffaloverflow): Rich Warren for Demiguise
+- [@arvanaghi](https://twitter.com/arvanaghi) and [@ChrisTruncer](https://twitter.com/ChrisTruncer): Brandon Arvanaghi and Chris Truncer for CheckPlease
