@@ -167,7 +167,7 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
         templatesource = ""
 
         if not template_name:
-            htmltemplate = input("\n\033[1;34m[*]\033[0;0m Use a custom (1) or predefined (2) template?\n").lower()
+            htmltemplate = input("\n\033[1;34m[*]\033[0;0m Use a custom (1) or predefined (2) template?\n")
             while True:
                 try:
                     htmltemplate = int(htmltemplate)
