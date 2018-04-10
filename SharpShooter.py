@@ -203,10 +203,11 @@ class SharpShooter:
         else:
             dotnet_version = int(args.dotnetver)
 
-        if (dotnet_version == 1):
-            dotnet_version = 2
-        elif(dotnet_version == 2):
-            dotnet_version = 4
+        if args.interactive:
+            if (dotnet_version == 1):
+                dotnet_version = 2
+            elif(dotnet_version == 2):
+                dotnet_version = 4
 
         stageless_payload = False
         if(args.interactive):
@@ -222,10 +223,10 @@ class SharpShooter:
             template_base = "templates/stageless."
         elif((args.stageless or stageless_payload is True) and dotnet_version == 4):
             template_base = "templates/stagelessv4."
-        elif((args.stageless or stageless_payload is True) == 4):
+        elif(dotnet_version == 4):
             template_base = "templates/sharpshooterv4."
 
-        # print template_base
+        #print(template_base)
         if args.interactive:
             print("\n\033[1;34m[*]\033[0;0m Select the type of payload to generate:")
             print("\033[92m[1]\033[0;0m HTA")
@@ -534,7 +535,7 @@ class SharpShooter:
                 if not args.interactive:
                     sys.exit(-1)
 
-        # print template_code
+        #print(template_code)
         key = self.rand_key(10)
         payload_encrypted = self.rc4(key, template_code)
         payload_encoded = base64.b64encode(payload_encrypted)
