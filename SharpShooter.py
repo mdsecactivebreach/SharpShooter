@@ -432,12 +432,16 @@ class SharpShooter:
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
                 sys.exit(-1)
 
-        
         amsi_bypass = ""
+        outputfile = args.output
+        outputfile_payload = outputfile + "." + file_type
         if args.amsi:
-            amsi_bypass = amsikiller.amsi_stub(file_type, args.amsi)
+            amsi_bypass = amsikiller.amsi_stub(file_type, args.amsi, outputfile_payload)
 
-        template_code = amsi_bypass + template_code
+            if "vb" in file_type or "hta" in file_type:
+                template_code = amsi_bypass + template_code + "\nOn Error Goto 0\nEnd If"
+            else:
+                template_code = amsi_bypass + template_code + "}"
 
         #print(template_code)
 
@@ -473,14 +477,12 @@ class SharpShooter:
             payload = harness.replace("%B64PAYLOAD%", payload_encoded)
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
 
-        outputfile = args.output
-
         if (payload_type == 3):
             file_type = "jse"
         elif (payload_type == 5):
             file_type = "vbe"
 
-        outputfile_payload = outputfile + "." + file_type
+        
         f = open("output/" + outputfile_payload, 'w')
         
         #print(payload)
