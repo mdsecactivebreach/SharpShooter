@@ -23,6 +23,7 @@ mimeTypeDict = {
     ".xlsx": "application/vnd.ms-excel",
     ".xlsm": "application/vnd.ms-excel",
     ".xll": "application/vnd.ms-excel",
+    ".slk": "application/vnd.ms-excel",
     ".ppt": "application/vnd.ms-powerpoint",
     ".pps": "application/vnd.ms-powerpoint",
     ".ppsx": "application/vnd.ms-powerpoint",

@@ -1,1 +1,1 @@
-__all__ = ['embedinhtml', 'awl', 'amsikiller']
+__all__ = ['embedinhtml', 'awl', 'amsikiller', 'excel4']

