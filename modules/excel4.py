@@ -28,25 +28,25 @@ def generate_slk(shellcode_path):
 	return build_shellcode_slk(shellcode_path)
 
 def build_shellcode_slk(shellcode_path):
-	#print("[*] Building shellcode exec SLK")
+        #print("[*] Building shellcode exec SLK")
 
-	slk_output = SHELLCODE_HEADER
-	with open(shellcode_path, "rb") as f:
-	    byte = f.read(1)
-	    i = 0
-	    cell=0
-	    while byte != "":
-		if i == 0:
-			cell=cell+1
-			slk_output+=("C;X2;Y%s;K0;E" % (str(cell)))
-		else:
-			slk_output+=("&")
-		slk_output+=("CHAR(" + str(bytes2int(byte)) + ")")
-	        byte = f.read(1)
-		i+=1
-		if i == 20:
-			slk_output+=("\n")
-			i = 0
-	cell=cell+1
-	slk_output+=("\nC;X2;Y%s;K0;ERETURN()\nE\n" % (str(cell)))
-	return slk_output
+        slk_output = SHELLCODE_HEADER
+        with open(shellcode_path, "rb") as f:
+                byte = f.read(1)
+                i = 0
+                cell=0
+                while byte != "":
+                        if i == 0:
+                                cell=cell+1
+                                slk_output+=("C;X2;Y%s;K0;E" % (str(cell)))
+                        else:
+                                slk_output+=("&")
+                        slk_output+=("CHAR(" + str(bytes2int(byte)) + ")")
+                        byte = f.read(1)
+                        i+=1
+                        if i == 20:
+                                slk_output+=("\n")
+                                i = 0
+        cell=cell+1
+        slk_output+=("\nC;X2;Y%s;K0;ERETURN()\nE\n" % (str(cell)))
+        return slk_output
