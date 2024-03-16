@@ -64,6 +64,7 @@ class SharpShooter:
         parser.add_argument("--amsi", metavar="<amsi>", dest="amsi", default=None, help="Use amsi bypass technique: amsienable")
         parser.add_argument("--delivery", metavar="<type>", dest="delivery", default=None, help="Delivery method: web, dns, both")
         parser.add_argument("--rawscfile", metavar="<path>", dest="rawscfile", default=None, help="Path to raw shellcode file for stageless payloads")
+        parser.add_argument("--rawscfile64", metavar="<path>", dest="rawscfile64", default=None, help="Path to raw shellcode file for stageless payloads. [64bit shellcode]")
         parser.add_argument("--shellcode", action='store_true', help="Use built in shellcode execution")
         parser.add_argument("--scfile", metavar="<path>", dest="shellcode_file", default=None, help="Path to shellcode file as CSharp byte array")
         parser.add_argument("--refs", metavar="<refs>", dest="refs", default=None, help="References required to compile custom CSharp,\ne.g. mscorlib.dll,System.Windows.Forms.dll")
@@ -559,8 +560,7 @@ End Sub"""
             f.write(macro_stager)
 
         if(payload_type == 9):
-            payload = excel4.generate_slk(args.rawscfile)
-        
+            payload = excel4.generate_slk(args.rawscfile, args.rawscfile64)
         if(args.comtechnique):
             if not args.awltechnique or args.awltechnique == "wmic":
                 payload_file = "output/" + outputfile + ".xsl"
