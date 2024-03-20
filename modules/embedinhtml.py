@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Original Author: Arno0x0x - https://twitter.com/Arno0x0x
@@ -63,7 +63,7 @@ def convertFromTemplate(parameters, templateFile):
 
 class RC4:
     def __init__(self, key=None):
-        self.state = range(256)  # initialisation de la table de permutation
+        self.state = list(range(256))  # initialisation de la table de permutation
         self.x = self.y = 0  # les index x et y, au lieu de i et j
 
         if key is not None:
@@ -72,7 +72,7 @@ class RC4:
 
     # Key schedule
     def init(self, key):
-        for i in range(256):
+        for i in list(range(256)):
             self.x = (ord(key[i % len(key)]) + self.state[i] + self.x) & 0xFF
             self.state[i], self.state[self.x] = self.state[self.x], self.state[i]
         self.x = 0
@@ -80,11 +80,11 @@ class RC4:
     # Encrypt binary input data
     def binaryEncrypt(self, data):
         output = [None] * len(data)
-        for i in range(len(data)):
+        for i in list(range(len(data))):
             self.x = (self.x + 1) & 0xFF
             self.y = (self.state[self.x] + self.y) & 0xFF
             self.state[self.x], self.state[self.y] = self.state[self.y], self.state[self.x]
-            output[i] = chr((data[i] ^ self.state[(self.state[self.x] + self.state[self.y]) & 0xFF]))
+            output[i] = chr((ord(data[i]) ^ self.state[(self.state[self.x] + self.state[self.y]) & 0xFF]))
         return ''.join(output)
 
     # Encrypt string input data
@@ -93,8 +93,8 @@ class RC4:
         Decrypt/encrypt the passed data using RC4 and the given key.
         https://github.com/EmpireProject/Empire/blob/73358262acc8ed3c34ffc87fa593655295b81434/data/agent/stagers/dropbox.py
         """
-        S, j, out = range(256), 0, []
-        for i in range(256):
+        S, j, out = list(range(256)), 0, []
+        for i in list(range(256)):
             j = (j + S[i] + ord(self.key[i % len(self.key)])) % 256
             S[i], S[j] = S[j], S[i]
         i = j = 0
@@ -114,7 +114,7 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
 
     if key and fileName and outFileName:
         try:
-            with open(fileName) as fileHandle:
+            with open(fileName, 'rb') as fileHandle:
                 fileBytes = bytearray(fileHandle.read())
                 fileHandle.close()
                 print("\033[1;34m[*]\033[0;0m File [{}] successfully loaded !".format(fileName))
@@ -134,7 +134,7 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
             print("\033[93m[!]\033[0;0m Could not determine the mime type for the input file. Force it using the -m switch.")
             quit()
 
-        payload = base64.b64encode(rc4Encryptor.binaryEncrypt(fileBytes))
+        payload = base64.b64encode(rc4Encryptor.binaryEncrypt(fileBytes.decode(encoding='utf-8')).encode())
         print("\033[1;34m[*]\033[0;0m Encrypted input file with key [{}]".format(key))
 
         # blobShim borrowed from https://github.com/mholt/PapaParse/issues/175#issuecomment-75597039
@@ -153,8 +153,8 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
         varBlobObjectName = rand()
         varBlob = rand()
         varBlobShim = rand()
-        blobShimEncrypted = base64.b64encode(rc4Encryptor.stringEncrypt(blobShim))
-        blobObjectNameEncrypted = base64.b64encode(rc4Encryptor.stringEncrypt("Blob"))
+        blobShimEncrypted = base64.b64encode(rc4Encryptor.stringEncrypt(blobShim).encode())
+        blobObjectNameEncrypted = base64.b64encode(rc4Encryptor.stringEncrypt("Blob").encode())
         fileName = os.path.basename(fileName)
 
         params = {
@@ -188,9 +188,9 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
                         if (template_choice < 1 or template_choice > 6):
                             raise Exception
                         if(template_choice == 1):
-                            templatesource = "./templates/sharepoint.tpl"
+                            templatesource = "templates/sharepoint.tpl"
                         elif(template_choice == 2):
-                            templatesource = "./templates/mcafee.tpl"
+                            templatesource = "templates/mcafee.tpl"
                         break
                     except:
                         print("\033[1;31m[!]\033[0;0m Incorrect choice")
@@ -198,8 +198,9 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
                 templatesource = input("\033[1;34m[*]\033[0;0m Provide full path to custom template\n")
 
         else:
-            templatesource = "./templates/%s.tpl" % template_name
+            templatesource = "templates/%s.tpl" % template_name
 
+        templatesource = os.path.dirname(os.path.realpath(__file__)) + '/../' + templatesource
         resultHTML = convertFromTemplate(params, templatesource)
 
         if resultHTML is not None:
