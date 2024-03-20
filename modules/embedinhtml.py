@@ -188,9 +188,9 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
                         if (template_choice < 1 or template_choice > 6):
                             raise Exception
                         if(template_choice == 1):
-                            templatesource = "./templates/sharepoint.tpl"
+                            templatesource = "templates/sharepoint.tpl"
                         elif(template_choice == 2):
-                            templatesource = "./templates/mcafee.tpl"
+                            templatesource = "templates/mcafee.tpl"
                         break
                     except:
                         print("\033[1;31m[!]\033[0;0m Incorrect choice")
@@ -198,8 +198,9 @@ def run_embedInHtml(key, fileName, outFileName, template_name):
                 templatesource = input("\033[1;34m[*]\033[0;0m Provide full path to custom template\n")
 
         else:
-            templatesource = "./templates/%s.tpl" % template_name
+            templatesource = "templates/%s.tpl" % template_name
 
+        templatesource = os.path.dirname(os.path.realpath(__file__)) + '/../' + templatesource
         resultHTML = convertFromTemplate(params, templatesource)
 
         if resultHTML is not None:
