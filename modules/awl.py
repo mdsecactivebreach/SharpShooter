@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 def create_com_stager(technique, filetype, awlurl, outputfile, sspayload, amsi):
 	

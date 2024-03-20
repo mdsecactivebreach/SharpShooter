@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import sys
 
 # Some of this code is bastardised from code by @StanHacked
