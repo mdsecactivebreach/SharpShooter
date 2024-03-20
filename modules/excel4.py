@@ -5,8 +5,8 @@ import sys
 # For a breakdown of this technique I recommend watching
 # http://www.irongeek.com/i.php?page=videos/derbycon8/track-3-18-the-ms-office-magic-show-stan-hegt-pieter-ceelen
 
-def bytes2int(str):
-        return int(str.encode('hex'), 16)
+def bytes2int(byte):
+    return int.from_bytes(byte, byteorder='big')
 
 SHELLCODE_HEADER = """ID;P
 O;E
